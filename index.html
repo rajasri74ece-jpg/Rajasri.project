@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analog Comm Simulator: Wien Bridge Carrier & Modulator Circuit</title>
+    <link rel="stylesheet" href="index.css">
+    <script defer src="app.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>Wien Bridge Carrier Generator & Modulator Circuit</h1>
+            <p>Software-Defined Analog AM/FM Hardware Model Simulator</p>
+        </div>
+        <div class="header-status">
+            <div id="indicator-osc" class="status-indicator active">
+                <span class="dot"></span>
+                <span>Oscillator: Sustained</span>
+            </div>
+            <div id="indicator-tuning" class="status-indicator">
+                <span class="dot"></span>
+                <span>Tuning R-C</span>
+            </div>
+            <div id="indicator-audio" class="status-indicator">
+                <span class="dot"></span>
+                <span>Audio Stream</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation Bar -->
+    <div class="tabs-navigation">
+        <button id="tab-btn-tx" class="tab-btn active">
+            <svg viewBox="0 0 24 24">
+                <path d="M12,3L2,12H5V20H19V12H22L12,3M12,7.7C14.1,7.7 15.8,9.4 15.8,11.5C15.8,13.6 14.1,15.3 12,15.3C9.9,15.3 8.2,13.6 8.2,11.5C8.2,9.4 9.9,7.7 12,7.7M12,9.2C10.7,9.2 9.7,10.2 9.7,11.5C9.7,12.8 10.7,13.8 12,13.8C13.3,13.8 14.3,12.8 14.3,11.5C14.3,10.2 13.3,9.2 12,9.2Z"/>
+            </svg>
+            Transmitter System (Wien Bridge)
+        </button>
+        <button id="tab-btn-rx" class="tab-btn">
+            <svg viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/>
+            </svg>
+            Receiver System (Superheterodyne)
+        </button>
+    </div>
+
+    <!-- Tab 1: Transmitter Content -->
+    <div id="tab-content-tx" class="tab-content active">
+        <div class="dashboard-grid">
+        
+        <!-- Column 1: Controls Panel -->
+        <div class="panel controls-panel">
+            <div class="panel-title">
+                <span>Signal Controls</span>
+                <span class="badge">Parameters</span>
+            </div>
+
+            <!-- Modulation Mode Selector -->
+            <div class="control-group">
+                <label class="control-label">Modulation Mode</label>
+                <div class="mode-toggle-container">
+                    <div id="mode-am" class="mode-btn active">AM Mode</div>
+                    <div id="mode-fm" class="mode-btn">FM Mode</div>
+                </div>
+            </div>
+
+            <!-- Wien Bridge RC parameters -->
+            <div class="control-group">
+                <label class="control-label" for="param-r">
+                    Wien Bridge R (Resistance)
+                    <span id="r-val" class="control-val-display">15.0 kΩ</span>
+                </label>
+                <input type="range" id="param-r" min="5" max="50" step="0.5" value="15">
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" for="param-c">
+                    Wien Bridge C (Capacitance)
+                    <span id="c-val" class="control-val-display">10.0 nF</span>
+                </label>
+                <input type="range" id="param-c" min="5" max="50" step="0.5" value="10">
+            </div>
+
+            <!-- Message Signal Parameter -->
+            <div class="control-group">
+                <label class="control-label" for="param-fm">
+                    Message Freq (fm)
+                    <span id="fm-val" class="control-val-display">2.0 Hz</span>
+                </label>
+                <input type="range" id="param-fm" min="1" max="10" step="0.5" value="2">
+            </div>
+
+            <!-- Mod Index Parameter -->
+            <div class="control-group">
+                <label class="control-label" for="param-m">
+                    <span id="m-label">Modulation Depth (m)</span>
+                    <span id="m-val" class="control-val-display">0.50</span>
+                </label>
+                <input type="range" id="param-m" min="0.1" max="1.5" step="0.05" value="0.5">
+            </div>
+
+            <!-- Audio Output Card -->
+            <div class="audio-card">
+                <label class="control-label">Audio Synth (Web Audio API)</label>
+                <div class="audio-controls">
+                    <button id="audio-play-btn" class="audio-btn" title="Toggle Sound Output">
+                        <!-- Play Icon -->
+                        <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24">
+                            <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+                        </svg>
+                    </button>
+                    <select id="audio-source" class="audio-select">
+                        <option value="modulated">Output s(t) [Modulated]</option>
+                        <option value="carrier">Carrier c(t) [Wien Output]</option>
+                        <option value="message">Message m(t) [Low Hum]</option>
+                    </select>
+                </div>
+                <div class="volume-slider-container">
+                    <!-- Volume Icon -->
+                    <svg viewBox="0 0 24 24">
+                        <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+                    </svg>
+                    <input type="range" id="audio-volume" min="0" max="1.0" step="0.05" value="0.3">
+                </div>
+            </div>
+
+            <!-- Oscilloscope configuration -->
+            <div class="control-group">
+                <label class="control-label" for="param-zoom">
+                    Scope Timebase (X-Scale)
+                    <span id="zoom-val" class="control-val-display">1.00x</span>
+                </label>
+                <input type="range" id="param-zoom" min="0.2" max="2.0" step="0.05" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" for="trigger-mode">Scope Sweep Trigger</label>
+                <select id="trigger-mode" class="audio-select">
+                    <option value="auto">Auto (Phase Lock / Stable)</option>
+                    <option value="roll">Roll (Continuous Scrolling)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Column 2: Schematic & Details -->
+        <div class="oscilloscope-group">
+            
+            <!-- Circuit schematic viewer -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>Interactive Circuit Schematic</span>
+                    <span class="badge">Hardware View</span>
+                </div>
+                
+                <div class="circuit-svg-container">
+                    <svg class="circuit-schematic" viewBox="0 0 560 280">
+                        <defs>
+                            <!-- Ground symbol template -->
+                            <g id="ground">
+                                <line x1="0" y1="0" x2="0" y2="10" class="wire-ground" stroke-width="2"/>
+                                <line x1="-10" y1="10" x2="10" y2="10" class="wire-ground" stroke-width="2"/>
+                                <line x1="-6" y1="14" x2="6" y2="14" class="wire-ground" stroke-width="1.5"/>
+                                <line x1="-2" y1="18" x2="2" y2="18" class="wire-ground" stroke-width="1"/>
+                            </g>
+                        </defs>
+                        
+                        <!-- Ambient grid helper (hidden but useful for layout alignment) -->
+                        <rect width="560" height="280" class="schematic-bg"/>
+
+                        <!-- Wires (Base layer) -->
+                        <!-- Wien Bridge Feedback loop wires -->
+                        <path d="M 270 130 L 290 130 L 290 50 L 120 50 L 120 65" class="wire-base"/>
+                        <path d="M 120 85 L 120 115 L 210 115" class="wire-base"/>
+                        
+                        <!-- Parallel branches -->
+                        <path d="M 120 115 L 80 115 L 80 130" class="wire-base"/>
+                        <path d="M 120 115 L 140 115 L 140 130" class="wire-base"/>
+                        
+                        <!-- Varactor branch -->
+                        <path d="M 80 115 L 40 115 L 40 130" class="wire-base"/>
+
+                        <!-- Negative feedback loop wires -->
+                        <path d="M 290 130 L 290 145 L 254 145" class="wire-base"/>
+                        <path d="M 230 145 L 180 145 L 210 145" class="wire-base"/>
+                        <path d="M 180 145 L 180 170" class="wire-base"/>
+                        
+                        <!-- Multiplier & Modulator wires -->
+                        <path d="M 290 130 L 385 130" class="wire-base"/>
+                        <path d="M 415 130 L 510 130" class="wire-base"/>
+                        
+                        <!-- Message routing wires -->
+                        <path id="wire-msg-to-mult" d="M 400 225 L 400 145" class="wire-base"/>
+                        <path id="wire-msg-to-var" d="M 400 200 L 20 200 L 20 140 L 40 140" class="wire-base" stroke-dasharray="4,4"/>
+
+                        <!-- Active animated glowing wire indicators -->
+                        <!-- Carrier feedback glow -->
+                        <path d="M 270 130 L 290 130 L 290 50 L 120 50 L 120 65" class="wire-active wire-carrier"/>
+                        <path d="M 120 85 L 120 115 L 210 115" class="wire-active wire-carrier"/>
+                        
+                        <!-- Modulator active path lines -->
+                        <!-- AM Message path -->
+                        <path d="M 400 225 L 400 145" class="wire-active wire-message"/>
+                        <!-- AM Carrier to multiplier -->
+                        <path d="M 290 130 L 385 130" class="wire-active wire-carrier"/>
+                        <!-- AM output -->
+                        <path d="M 415 130 L 510 130" class="wire-active wire-modulated"/>
+                        
+                        <!-- FM Message path (Varactor input) -->
+                        <path d="M 400 200 L 20 200 L 20 140 L 40 140" class="wire-active wire-message" stroke-dasharray="4,4"/>
+
+                        <!-- GROUND Connections -->
+                        <use href="#ground" x="80" y="154" />
+                        <use href="#ground" x="140" y="142" />
+                        <use href="#ground" x="40" y="154" />
+                        <use href="#ground" x="180" y="194" />
+                        <use href="#ground" x="400" y="250" />
+
+                        <!-- COMPONENTS -->
+
+                        <!-- Operational Amplifier Symbol (Triangle) -->
+                        <g class="component-interactive" data-comp="opamp">
+                            <polygon points="210,100 210,160 260,130" class="component-body" />
+                            <text x="214" y="121" class="schematic-text" font-weight="bold" fill="#f43f5e">+</text>
+                            <text x="214" y="151" class="schematic-text" font-weight="bold" fill="#0ea5e9">-</text>
+                            <text x="222" y="134" class="schematic-text" font-size="9" fill="#94a3b8">Op-Amp</text>
+                        </g>
+
+                        <!-- Resistors -->
+                        <!-- Series R_s -->
+                        <g class="component-interactive" data-comp="wien-r">
+                            <rect x="114" y="65" width="12" height="20" class="component-body" />
+                            <text x="130" y="77" class="schematic-text">Rs</text>
+                            <text id="sch-r-val" x="130" y="87" class="schematic-text schematic-text-val">15k</text>
+                        </g>
+                        
+                        <!-- Parallel R_p -->
+                        <g class="component-interactive" data-comp="wien-r">
+                            <rect x="74" y="130" width="12" height="24" class="component-body" />
+                            <text x="80" y="125" class="schematic-text" text-anchor="middle">Rp</text>
+                        </g>
+
+                        <!-- Feedback R_f -->
+                        <g class="component-interactive" data-comp="feedback-rf">
+                            <rect x="230" y="140" width="24" height="10" class="component-body" />
+                            <text x="242" y="135" class="schematic-text" text-anchor="middle">Rf</text>
+                        </g>
+                        
+                        <!-- Feedback R_i -->
+                        <g class="component-interactive" data-comp="feedback-rf">
+                            <rect x="174" y="170" width="12" height="24" class="component-body" />
+                            <text x="168" y="184" class="schematic-text" text-anchor="end">Ri</text>
+                        </g>
+
+                        <!-- Capacitors -->
+                        <!-- Series C_s -->
+                        <g class="component-interactive" data-comp="wien-c">
+                            <!-- Capacitor Plates -->
+                            <line x1="112" y1="91" x2="128" y2="91" stroke="#f8fafc" stroke-width="2.5"/>
+                            <line x1="112" y1="96" x2="128" y2="96" stroke="#f8fafc" stroke-width="2.5"/>
+                            <rect x="110" y="88" width="20" height="11" fill="transparent" class="component-body" stroke="none" />
+                            <text x="130" y="99" class="schematic-text">Cs</text>
+                            <text id="sch-c-val" x="130" y="109" class="schematic-text schematic-text-val">10n</text>
+                        </g>
+                        
+                        <!-- Parallel C_p -->
+                        <g class="component-interactive" data-comp="wien-c">
+                            <!-- Capacitor Plates -->
+                            <line x1="132" y1="134" x2="148" y2="134" stroke="#f8fafc" stroke-width="2.5"/>
+                            <line x1="132" y1="139" x2="148" y2="139" stroke="#f8fafc" stroke-width="2.5"/>
+                            <rect x="130" y="130" width="20" height="13" fill="transparent" class="component-body" stroke="none" />
+                            <text x="140" y="125" class="schematic-text" text-anchor="middle">Cp</text>
+                        </g>
+
+                        <!-- Varactor Diode (FM Modulator) -->
+                        <g id="schematic-varactor" class="component-interactive fm-style" data-comp="varactor">
+                            <!-- Diode Triangle -->
+                            <polygon points="34,130 46,130 40,140" class="component-body"/>
+                            <!-- Double Capacitor Bar -->
+                            <line x1="34" y1="144" x2="46" y2="144" stroke="#8b5cf6" stroke-width="2"/>
+                            <line x1="34" y1="147" x2="46" y2="147" stroke="#8b5cf6" stroke-width="2"/>
+                            <text id="sch-var-label" x="40" y="105" class="schematic-text" text-anchor="middle" fill="#8b5cf6">Varactor</text>
+                        </g>
+
+                        <!-- AM Multiplier / FET Modulator block -->
+                        <g id="schematic-multiplier" class="component-interactive" data-comp="multiplier">
+                            <circle cx="400" cy="130" r="15" class="component-body" />
+                            <text x="400" y="134" class="schematic-text" text-anchor="middle" font-weight="bold" fill="#10b981">×</text>
+                            <text id="sch-mult-label" x="400" y="105" class="schematic-text" text-anchor="middle" fill="#10b981">FET Mult</text>
+                        </g>
+
+                        <!-- Message Signal Generator Block -->
+                        <circle cx="400" cy="225" r="15" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+                        <!-- Wave symbol inside -->
+                        <path d="M 392 225 Q 396 217 400 225 T 408 225" fill="none" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="424" y="228" class="schematic-text" fill="#f59e0b">Message Source m(t)</text>
+
+                        <!-- Glowing Active Connection Points (Intersection Nodes) -->
+                        <circle id="glow-dot-carrier" cx="290" cy="130" r="4" class="node-dot-glowing carrier" />
+                        <circle id="glow-dot-message" cx="400" cy="200" r="4" class="node-dot-glowing message" />
+                        <circle id="glow-dot-modulated" cx="510" cy="130" r="4" class="node-dot-glowing modulated" />
+                        
+                        <!-- Simple schematic labels -->
+                        <text x="515" y="125" class="schematic-text">Output s(t)</text>
+                        <text x="295" y="125" class="schematic-text">Carrier fc</text>
+                    </svg>
+
+                    <!-- Hover tooltip element -->
+                    <div id="circuit-tooltip" class="circuit-tooltip">
+                        <strong>Component</strong>
+                        <p>Description placeholder.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Engineering details & breakdown -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>Engineering Breakdown</span>
+                    <span class="badge">Circuit Math</span>
+                </div>
+                
+                <div class="math-card">
+                    <strong>Modulator Formulation:</strong>
+                    <div id="eq-mode" style="font-weight: 600; color: var(--accent-cyan); margin-top: 8px;"></div>
+                    <div id="eq-formula" class="math-equation"></div>
+                    
+                    <p style="margin-top: 12px; font-size: 13px;">
+                        The Wien Bridge resonant frequency is calculated theoretically as:
+                        <code style="display:block; text-align:center; padding: 6px; margin: 6px 0;">fc = 1 / (2 * &pi; * R * C)</code>
+                        To maintain oscillations, the gain resistors must satisfy:
+                        <code style="display:block; text-align:center; padding: 6px; margin: 6px 0;">Rf / Ri &ge; 2.0</code>
+                    </p>
+                </div>
+
+                <div class="control-group">
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Operational Metric</th>
+                                <th style="text-align: right">Calculated Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Oscillator Resonant Freq (fc)</td>
+                                <td id="stat-fc" class="val">1.061 kHz</td>
+                            </tr>
+                            <tr>
+                                <td>Message Frequency (fm)</td>
+                                <td id="stat-fm" class="val">2.0 Hz</td>
+                            </tr>
+                            <tr>
+                                <td>Modulation Parameter (m)</td>
+                                <td id="stat-m" class="val">0.50</td>
+                            </tr>
+                            <tr>
+                                <td id="lbl-param">Modulation Depth (m)</td>
+                                <td id="stat-param" class="val">0.50</td>
+                            </tr>
+                            <tr>
+                                <td id="lbl-bw">Occupied Carson Bandwidth</td>
+                                <td id="stat-bw" class="val">24.0 Hz</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: Oscilloscope Screens -->
+        <div class="oscilloscope-group">
+            
+            <!-- Message waveform screen -->
+            <div class="oscilloscope-screen">
+                <div class="oscilloscope-label">CH 1: BASEBAND MESSAGE SIGNAL m(t)</div>
+                <canvas id="canvas-msg"></canvas>
+                <div class="oscilloscope-metrics">
+                    <span>V_DIV: 1.0V</span>
+                    <span>T_DIV: 100ms</span>
+                </div>
+            </div>
+
+            <!-- Modulated waveform screen -->
+            <div class="oscilloscope-screen">
+                <div id="output-screen-label" class="oscilloscope-label">CH 2: AM MODULATED OUTPUT s(t)</div>
+                <canvas id="canvas-mod"></canvas>
+                <div class="oscilloscope-metrics">
+                    <span>V_DIV: 1.0V</span>
+                    <span>T_DIV: 100ms</span>
+                </div>
+            </div>
+
+            <!-- Frequency spectrum analyzer screen -->
+            <div class="oscilloscope-screen">
+                <div class="oscilloscope-label">SPECTRUM ANALYZER: POWER DENSITY S(f)</div>
+                <canvas id="canvas-spec"></canvas>
+                <div class="oscilloscope-metrics">
+                    <span>SPAN: 200Hz</span>
+                    <span>RES BW: 1Hz</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Receiver Content -->
+    <div id="tab-content-rx" class="tab-content">
+        <div class="dashboard-grid">
+            
+            <!-- Receiver Controls Sidebar -->
+            <div class="panel controls-panel tuner-panel">
+                <div class="panel-title">
+                    <span>Receiver Tuner</span>
+                    <span class="badge" style="background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.2)">Tuning</span>
+                </div>
+
+                <!-- Noise Level Slider -->
+                <div class="control-group noise-active">
+                    <label class="control-label" for="param-noise">
+                        Channel Noise (AWGN)
+                        <span id="noise-val" class="control-val-display" style="color:var(--accent-rose)">15 %</span>
+                    </label>
+                    <input type="range" id="param-noise" min="0" max="1.0" step="0.05" value="0.15">
+                </div>
+
+                <!-- LO Tuner Slider -->
+                <div class="control-group">
+                    <div class="tuner-dial-container">
+                        <label class="control-label" for="param-tuner" style="width:100%">
+                            Tuning Dial (LO Freq)
+                            <span id="tuner-val" class="control-val-display" style="color:var(--accent-purple)">1.200 kHz</span>
+                        </label>
+                        <input type="range" id="param-tuner" min="300" max="3000" step="5" value="1200" style="margin-top:8px">
+                        <span class="tuner-target-marker">IF Band: 455 Hz</span>
+                    </div>
+                </div>
+
+                <!-- Static details block -->
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid var(--border-color)">
+                    <p style="margin-bottom:6px"><strong>Tuning Hint:</strong> Adjust the LO Tuning dial until the mixer difference spike aligns with the shaded filter band on the spectrum.</p>
+                    <p>At perfect alignment, the static hiss will vanish and the received signal will come through loud and clear.</p>
+                </div>
+            </div>
+
+            <!-- Receiver Middle Column: Block Diagram & Math -->
+            <div class="oscilloscope-group">
+                
+                <!-- SVG Block Diagram -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <span>Superheterodyne Block Diagram</span>
+                        <span class="badge" style="background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.2)">Block Schematic</span>
+                    </div>
+                    
+                    <div class="circuit-svg-container rx-svg-container">
+                        <svg class="circuit-schematic" viewBox="0 0 560 280">
+                            <!-- Background -->
+                            <rect width="560" height="280" class="schematic-bg"/>
+
+                            <!-- Paths (Base Wires) -->
+                            <!-- Antenna to RF mixer -->
+                            <path d="M 40 90 L 40 130 L 115 130" class="wire-base" />
+                            <!-- LO to Mixer -->
+                            <path d="M 130 220 L 130 145" class="wire-base" />
+                            <!-- Mixer to IF Filter -->
+                            <path d="M 145 130 L 210 130" class="wire-base" />
+                            <!-- IF Filter to Detector -->
+                            <path d="M 290 130 L 350 130" class="wire-base" />
+                            <!-- Detector to Audio Amp -->
+                            <path d="M 430 130 L 480 130" class="wire-base" />
+
+                            <!-- Active Wires (Active Glows) -->
+                            <!-- RF signal wire -->
+                            <path d="M 40 90 L 40 130 L 115 130" class="wire-active rx-wire-rf" stroke="#0ea5e9"/>
+                            <!-- LO signal wire -->
+                            <path d="M 130 220 L 130 145" class="wire-active rx-wire-lo" stroke="#8b5cf6"/>
+                            <!-- IF filter wire (glowing based on tuning gain) -->
+                            <path d="M 145 130 L 210 130" class="wire-active rx-wire-if" stroke="#f59e0b" />
+                            <path d="M 290 130 L 350 130" class="wire-active rx-wire-if" stroke="#f59e0b" />
+                            <!-- Audio output wire -->
+                            <path d="M 430 130 L 480 130" class="wire-active rx-wire-audio" stroke="#10b981"/>
+
+                            <!-- Components (Interactive Blocks) -->
+                            
+                            <!-- Antenna Symbol -->
+                            <g class="component-interactive rx-style" data-comp="rx-antenna">
+                                <line x1="40" y1="90" x2="40" y2="40" stroke="#0ea5e9" stroke-width="2.5"/>
+                                <line x1="25" y1="40" x2="40" y2="55" stroke="#0ea5e9" stroke-width="2.5"/>
+                                <line x1="55" y1="40" x2="40" y2="55" stroke="#0ea5e9" stroke-width="2.5"/>
+                                <line x1="25" y1="40" x2="55" y2="40" stroke="#0ea5e9" stroke-width="2.5"/>
+                                <text x="40" y="30" class="schematic-text" text-anchor="middle" fill="#0ea5e9">RF Input</text>
+                            </g>
+
+                            <!-- Mixer (Circle with X) -->
+                            <g class="component-interactive rx-style" data-comp="rx-mixer">
+                                <circle cx="130" cy="130" r="15" class="rx-block-rect" />
+                                <text x="130" y="134" class="schematic-text" text-anchor="middle" font-weight="bold" fill="#38bdf8">×</text>
+                                <text x="130" y="105" class="schematic-text" text-anchor="middle" fill="#38bdf8">Mixer</text>
+                            </g>
+
+                            <!-- Local Oscillator (LO) Block -->
+                            <g class="component-interactive rx-style" data-comp="rx-lo">
+                                <rect x="90" y="220" width="80" height="30" class="rx-block-rect" />
+                                <text x="130" y="235" class="schematic-text" text-anchor="middle" fill="#8b5cf6">Local Osc</text>
+                                <text id="sch-rx-tuning-val" x="130" y="245" class="schematic-text" text-anchor="middle" font-weight="bold" fill="#8b5cf6">1.200k</text>
+                            </g>
+
+                            <!-- IF Bandpass Filter -->
+                            <g class="component-interactive rx-style" data-comp="rx-iffilter">
+                                <rect x="210" y="115" width="80" height="30" class="rx-block-rect" />
+                                <text x="250" y="133" class="schematic-text" text-anchor="middle" fill="#f59e0b">IF Filter</text>
+                                <text x="250" y="142" class="schematic-text" font-size="8" text-anchor="middle" fill="#64748b">455 Hz</text>
+                            </g>
+
+                            <!-- Demodulator Detector -->
+                            <g class="component-interactive rx-style" data-comp="rx-detector">
+                                <rect x="350" y="115" width="80" height="30" class="rx-block-rect" />
+                                <text x="390" y="133" class="schematic-text" text-anchor="middle" fill="#10b981">Detector</text>
+                            </g>
+
+                            <!-- Audio Amp output stage -->
+                            <g class="component-interactive rx-style" data-comp="rx-audio">
+                                <rect x="480" y="115" width="60" height="30" class="rx-block-rect"/>
+                                <text x="510" y="133" class="schematic-text" text-anchor="middle" fill="#10b981">Audio</text>
+                            </g>
+
+                            <!-- Glowing Active Nodes -->
+                            <circle id="rx-glow-dot-antenna" cx="40" cy="130" r="4" class="node-dot-glowing carrier" />
+                            <circle id="rx-glow-dot-lo" cx="130" cy="180" r="4" class="node-dot-glowing modulated" stroke="#8b5cf6" fill="#8b5cf6" />
+                            <circle id="rx-glow-dot-mixer" cx="130" cy="130" r="4" class="node-dot-glowing message" />
+                            <circle id="rx-glow-dot-if" cx="295" cy="130" r="4" class="node-dot-glowing message" stroke="#f59e0b" fill="#f59e0b" />
+                            <circle id="rx-glow-dot-audio" cx="455" cy="130" r="4" class="node-dot-glowing modulated" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Receiver Engineering details & math -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <span>Receiver Math & Parameters</span>
+                        <span class="badge" style="background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.2)">Tuning Math</span>
+                    </div>
+
+                    <div class="math-card" style="border-color:rgba(139,92,246,0.15)">
+                        <strong>Tuned Formulation:</strong>
+                        <div id="rx-eq-mode" style="font-weight:600;color:var(--accent-purple);margin-top:8px"></div>
+                        <div id="rx-eq-formula" class="math-equation" style="border-color:rgba(139,92,246,0.08)"></div>
+                        <p style="margin-top:10px;font-size:12px;color:var(--text-secondary)">
+                            A superheterodyne mixer multiplies the RF input by the LO output. The difference frequency f_diff = |f_LO - f_RF| is filtered by a bandpass filter centered at f_IF = 455 Hz.
+                        </p>
+                    </div>
+
+                    <div class="control-group">
+                        <table class="parameter-table">
+                            <thead>
+                                <tr>
+                                    <th>Receiver Metric</th>
+                                    <th style="text-align:right">Calculated Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Received Carrier Freq (fc)</td>
+                                    <td id="rx-stat-fc" class="val">1.061 kHz</td>
+                                </tr>
+                                <tr>
+                                    <td>Local Oscillator Freq (f_LO)</td>
+                                    <td id="rx-stat-lo" class="val">1.516 kHz</td>
+                                </tr>
+                                <tr>
+                                    <td>IF Tuning Deviation Error</td>
+                                    <td id="rx-stat-error" class="val">0 Hz</td>
+                                </tr>
+                                <tr>
+                                    <td>IF Bandpass Selectivity (Gain)</td>
+                                    <td id="rx-stat-param" class="val">100.0 %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receiver Right Column: Oscilloscopes -->
+            <div class="oscilloscope-group">
+                <!-- Received RF wave -->
+                <div class="oscilloscope-screen" style="border-color:rgba(244,63,94,0.15)">
+                    <div class="oscilloscope-label" style="color:var(--accent-rose)">CH 1: RECEIVED RF WAVEFORM r(t) [s(t) + Noise]</div>
+                    <canvas id="canvas-rx-rf"></canvas>
+                    <div class="oscilloscope-metrics">
+                        <span style="color:var(--accent-rose)">V_DIV: 1.0V</span>
+                        <span style="color:var(--accent-rose)">T_DIV: 100ms</span>
+                    </div>
+                </div>
+
+                <!-- IF signal wave -->
+                <div class="oscilloscope-screen" style="border-color:rgba(245,158,11,0.15)">
+                    <div class="oscilloscope-label" style="color:var(--accent-amber)">CH 2: INTERMEDIATE FREQUENCY s_IF(t) after Filter</div>
+                    <canvas id="canvas-rx-if"></canvas>
+                    <div class="oscilloscope-metrics">
+                        <span style="color:var(--accent-amber)">V_DIV: 1.0V</span>
+                        <span style="color:var(--accent-amber)">T_DIV: 100ms</span>
+                    </div>
+                </div>
+
+                <!-- Demodulated comparison wave -->
+                <div class="oscilloscope-screen" style="border-color:rgba(16,185,129,0.15)">
+                    <div class="oscilloscope-label" style="color:var(--accent-emerald)">CH 3: DEMODULATED OUTPUT m_hat(t) (Ref: m(t))</div>
+                    <canvas id="canvas-rx-demod"></canvas>
+                    <div class="oscilloscope-metrics">
+                        <span style="color:var(--accent-emerald)">V_DIV: 1.0V</span>
+                        <span style="color:var(--accent-emerald)">T_DIV: 100ms</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Tech details footer -->
+    <div class="circuit-details">
+        <strong>Hardware Design Insights:</strong> The Wien Bridge configuration uses lead-lag phase-shifting networks (the series and parallel RC components) to feedback precisely in-phase voltages at the resonant frequency $f_c$.
+        At resonance, the transfer function attenuation is exactly $1/3$, necessitating a non-inverting op-amp closed-loop gain $A_v = 3$ to achieve unity loop gain ($A\beta = 1$) under the **Barkhausen Criterion**. 
+        <br><br>
+        • In **AM Mode**, amplitude scaling is performed in the multiplier stage via FET channel resistance modulation. 
+        • In **FM Mode**, the message signal changes the bias of varactor diodes placed in parallel with $C_p$, directly modulating the time constant of the lead-lag network and sweeping the carrier frequency.
+    </div>
+
+    <!-- Bottom Footer -->
+    <div class="footer-bar">
+        <span>Google gravity Pair Programming Project</span>
+        <span>Version 1.5 (Stable Build)</span>
+        <span><a href="#">Documentation</a> | <a href="#">Schematics</a></span>
+    </div>
+</div>
+
+</body>
+</html>
